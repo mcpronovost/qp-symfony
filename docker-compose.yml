@@ -5,20 +5,22 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    container_name: app
+    container_name: qpsymfony_app
     tty: true
     depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_DB:-app}:${POSTGRES_PASSWORD:-!sympass101;!}@127.0.0.1:5432/${POSTGRES_DB:-app}
+      - database
+    env_file:
+      - .env
     working_dir: /var/www
     volumes:
       - ./:/var/www
 
   nginx:
     image: nginx:stable
-    container_name: nginx
+    container_name: qpsymfony_nginx
     restart: always
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     depends_on:
@@ -29,16 +31,35 @@ services:
     links:
       - app
 
-  db:
-    image: postgres:${POSTGRES_VERSION:-14}-alpine
+  database:
+    image: postgres:14-alpine
+    container_name: database
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!sympass101;!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_DB: ${POSTGRES_DB:-db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qppass}
+      POSTGRES_USER: ${POSTGRES_USER:-qpuser}
+      PGDATA: /var/lib/postgresql/data
+    labels:
+      com.symfony.server.service-prefix: DATABASE
     ports:
-      - "5432"
+      - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data:rw
 
+  # pgadmin:
+  #  container_name: pgadmin4_container
+  #  image: dpage/pgadmin4
+  #  restart: always
+  #  environment:
+  #    PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #    PGADMIN_DEFAULT_PASSWORD: root
+  #  ports:
+  #    - "5050:80"
+  #  volumes:
+  #    - pgadmin-data:/var/lib/pgadmin
+
 volumes:
   db-data:
+  # pgadmin-data:
